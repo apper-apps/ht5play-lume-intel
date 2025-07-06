@@ -1,15 +1,24 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import ApperIcon from '@/components/ApperIcon'
-import Button from '@/components/atoms/Button'
-import { toast } from 'react-toastify'
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
 
 const AdminHeader = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [user] = useState({
+    firstName: 'Admin',
+    name: 'Administrator'
+  })
 
   const handleClearCache = () => {
     toast.success('Cache cleared successfully')
+  }
+
+  const handleLogout = () => {
+    toast.success('Logged out successfully')
+    // Add logout logic here
   }
 
   return (
@@ -41,7 +50,7 @@ const AdminHeader = () => {
             </Button>
           </Link>
 
-          <div className="relative">
+<div className="relative">
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="w-8 h-8 bg-accent rounded-full flex items-center justify-center hover:scale-110 transition-transform"
@@ -57,11 +66,23 @@ const AdminHeader = () => {
                 exit={{ opacity: 0, y: -10 }}
               >
                 <div className="p-4 space-y-2">
+                  {user && (
+                    <div className="text-sm text-gray-300 p-2 border-b border-white/10">
+                      Welcome, {user.firstName || user.name || 'Admin'}
+                    </div>
+                  )}
                   <button className="w-full text-left p-2 rounded hover:bg-white/10 transition-colors text-white font-poppins">
                     Edit Profile
                   </button>
                   <button className="w-full text-left p-2 rounded hover:bg-white/10 transition-colors text-white font-poppins">
                     Change Password
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left p-2 rounded hover:bg-red-500/20 transition-colors text-red-400 font-poppins flex items-center gap-2"
+                  >
+                    <ApperIcon name="LogOut" className="w-4 h-4" />
+                    Logout
                   </button>
                 </div>
               </motion.div>

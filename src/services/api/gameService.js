@@ -1,209 +1,572 @@
-// Game Service - Mock implementation with localStorage
-const STORAGE_KEY = 'ht5play_games'
+// Game Service - Apper Backend Integration
+import { toast } from 'react-toastify';
 
-// Mock game data
-const mockGames = [
-  {
-    id: 1,
-    title: 'Puzzle Master',
-    slug: 'puzzle-master',
-    description: 'Challenge your mind with this exciting puzzle game.',
-    url: 'https://example.com/puzzle-master',
-    thumb: 'https://via.placeholder.com/300x200',
-    category_id: 1,
-    featured: true,
-    plays: 1250,
-    rating: 4.5,
-    width: 800,
-    height: 600,
-    source: 'GameMonetize',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: 2,
-    title: 'Action Hero',
-    slug: 'action-hero',
-    description: 'Fast-paced action game with amazing graphics.',
-    url: 'https://example.com/action-hero',
-    thumb: 'https://via.placeholder.com/300x200',
-    category_id: 2,
-    featured: false,
-    plays: 890,
-    rating: 4.2,
-    width: 800,
-    height: 600,
-    source: 'GamePix',
-    created_at: '2024-01-14T15:45:00Z',
-    updated_at: '2024-01-14T15:45:00Z'
-  },
-  {
-    id: 3,
-    title: 'Racing Thunder',
-    slug: 'racing-thunder',
-    description: 'High-speed racing game with realistic physics.',
-    url: 'https://example.com/racing-thunder',
-    thumb: 'https://via.placeholder.com/300x200',
-    category_id: 3,
-    featured: true,
-    plays: 2100,
-    rating: 4.8,
-    width: 800,
-    height: 600,
-    source: 'Custom',
-    created_at: '2024-01-13T09:20:00Z',
-    updated_at: '2024-01-13T09:20:00Z'
-  }
-]
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 class GameService {
   constructor() {
-    this.initializeStorage()
+    this.tableName = 'game';
+    this.apperClient = null;
+    this.initializeClient();
   }
 
-  initializeStorage() {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockGames))
-    }
-  }
-
-  getGames() {
-    try {
-      const games = localStorage.getItem(STORAGE_KEY)
-      return games ? JSON.parse(games) : []
-    } catch (error) {
-      console.error('Error loading games:', error)
-      return mockGames
+  initializeClient() {
+    if (typeof window !== 'undefined' && window.ApperSDK) {
+      const { ApperClient } = window.ApperSDK;
+      this.apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
     }
   }
 
   async getAllGames() {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return this.getGames()
+    try {
+      await delay(500);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ],
+        orderBy: [
+          { fieldName: "title", sorttype: "ASC" }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching games:', error);
+      toast.error('Failed to fetch games');
+      return [];
+    }
   }
 
   async getGameById(id) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const games = this.getGames()
-    const game = games.find(g => g.id === parseInt(id))
-    
-    if (!game) {
-      throw new Error(`Game with ID ${id} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ]
+      };
+
+      const response = await this.apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching game with ID ${id}:`, error);
+      toast.error(`Failed to fetch game`);
+      return null;
     }
-    
-    return game
   }
 
   async getGameBySlug(slug) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const games = this.getGames()
-    const game = games.find(g => g.slug === slug)
-    
-    if (!game) {
-      throw new Error(`Game with slug ${slug} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ],
+        where: [
+          { FieldName: "slug", Operator: "EqualTo", Values: [slug] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (!response.data || response.data.length === 0) {
+        throw new Error(`Game with slug ${slug} not found`);
+      }
+
+      return response.data[0];
+    } catch (error) {
+      console.error(`Error fetching game with slug ${slug}:`, error);
+      toast.error(`Failed to fetch game`);
+      return null;
     }
-    
-    return game
   }
 
   async getFeaturedGames() {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const games = this.getGames()
-    return games.filter(game => game.featured)
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ],
+        where: [
+          { FieldName: "featured", Operator: "EqualTo", Values: [true] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching featured games:', error);
+      toast.error('Failed to fetch featured games');
+      return [];
+    }
   }
 
   async getGamesByCategory(categoryId) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const games = this.getGames()
-    return games.filter(game => game.category_id === parseInt(categoryId))
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ],
+        where: [
+          { FieldName: "category_id", Operator: "EqualTo", Values: [parseInt(categoryId)] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error(`Error fetching games by category ${categoryId}:`, error);
+      toast.error('Failed to fetch games');
+      return [];
+    }
   }
 
   async searchGames(query) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const games = this.getGames()
-    const lowerQuery = query.toLowerCase()
-    
-    return games.filter(game => 
-      game.title.toLowerCase().includes(lowerQuery) ||
-      game.description.toLowerCase().includes(lowerQuery)
-    )
+    try {
+      await delay(500);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "description" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumb" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "plays" } },
+          { field: { Name: "rating" } },
+          { field: { Name: "width" } },
+          { field: { Name: "height" } },
+          { field: { Name: "source" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } },
+          { 
+            field: { name: "category_id" },
+            referenceField: { field: { Name: "Name" } }
+          }
+        ],
+        whereGroups: [{
+          operator: "OR",
+          subGroups: [
+            {
+              conditions: [
+                { fieldName: "title", operator: "Contains", values: [query] }
+              ]
+            },
+            {
+              conditions: [
+                { fieldName: "description", operator: "Contains", values: [query] }
+              ]
+            }
+          ]
+        }]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error(`Error searching games with query ${query}:`, error);
+      toast.error('Failed to search games');
+      return [];
+    }
   }
 
   async createGame(gameData) {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    const games = this.getGames()
-    const newGame = {
-      id: Math.max(...games.map(g => g.id)) + 1,
-      ...gameData,
-      slug: this.generateSlug(gameData.title),
-      plays: 0,
-      rating: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    try {
+      await delay(600);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: gameData.Name || gameData.title,
+          Tags: gameData.Tags || '',
+          Owner: gameData.Owner,
+          title: gameData.title || '',
+          slug: gameData.slug || this.generateSlug(gameData.title),
+          description: gameData.description || '',
+          url: gameData.url || '',
+          thumb: gameData.thumb || '',
+          featured: gameData.featured || false,
+          plays: gameData.plays || 0,
+          rating: gameData.rating || 0,
+          width: gameData.width || 800,
+          height: gameData.height || 600,
+          source: gameData.source || '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          category_id: parseInt(gameData.category_id) || null
+        }]
+      };
+
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Game created successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error creating game:', error);
+      toast.error('Failed to create game');
+      return null;
     }
-    
-    games.push(newGame)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
-    return newGame
   }
 
   async updateGame(id, gameData) {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    const games = this.getGames()
-    const index = games.findIndex(g => g.id === parseInt(id))
-    
-    if (index === -1) {
-      throw new Error(`Game with ID ${id} not found`)
+    try {
+      await delay(600);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          Name: gameData.Name || gameData.title,
+          Tags: gameData.Tags || '',
+          Owner: gameData.Owner,
+          title: gameData.title || '',
+          slug: gameData.slug,
+          description: gameData.description || '',
+          url: gameData.url || '',
+          thumb: gameData.thumb || '',
+          featured: gameData.featured || false,
+          plays: gameData.plays || 0,
+          rating: gameData.rating || 0,
+          width: gameData.width || 800,
+          height: gameData.height || 600,
+          source: gameData.source || '',
+          updated_at: new Date().toISOString(),
+          category_id: parseInt(gameData.category_id) || null
+        }]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Game updated successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error updating game:', error);
+      toast.error('Failed to update game');
+      return null;
     }
-    
-    games[index] = {
-      ...games[index],
-      ...gameData,
-      updated_at: new Date().toISOString()
-    }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
-    return games[index]
   }
 
   async deleteGame(id) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const games = this.getGames()
-    const filteredGames = games.filter(g => g.id !== parseInt(id))
-    
-    if (filteredGames.length === games.length) {
-      throw new Error(`Game with ID ${id} not found`)
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulDeletions.length > 0) {
+          toast.success('Game deleted successfully');
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error deleting game:', error);
+      toast.error('Failed to delete game');
+      return false;
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredGames))
-    return { success: true }
   }
 
   async toggleFeatured(id) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const games = this.getGames()
-    const index = games.findIndex(g => g.id === parseInt(id))
-    
-    if (index === -1) {
-      throw new Error(`Game with ID ${id} not found`)
+    try {
+      await delay(400);
+      
+      const game = await this.getGameById(id);
+      if (!game) {
+        throw new Error(`Game with ID ${id} not found`);
+      }
+
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          featured: !game.featured,
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results && response.results.length > 0) {
+        const result = response.results[0];
+        if (result.success) {
+          toast.success(`Game ${result.data.featured ? 'featured' : 'unfeatured'} successfully`);
+          return result.data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error toggling game featured status:', error);
+      toast.error('Failed to toggle game featured status');
+      return null;
     }
-    
-    games[index].featured = !games[index].featured
-    games[index].updated_at = new Date().toISOString()
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
-    return games[index]
   }
 
   async incrementPlays(id) {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    const games = this.getGames()
-    const index = games.findIndex(g => g.id === parseInt(id))
-    
-    if (index !== -1) {
-      games[index].plays = (games[index].plays || 0) + 1
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
+    try {
+      await delay(200);
+      
+      const game = await this.getGameById(id);
+      if (!game) return;
+
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          plays: (game.plays || 0) + 1
+        }]
+      };
+
+      await this.apperClient.updateRecord(this.tableName, params);
+    } catch (error) {
+      console.error('Error incrementing game plays:', error);
     }
   }
 
@@ -213,28 +576,39 @@ class GameService {
       .replace(/[^a-z0-9 -]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .trim()
+      .trim();
   }
 
   async getGameStats() {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const games = this.getGames()
-    
-    return {
-      total: games.length,
-      featured: games.filter(g => g.featured).length,
-      recent: games.filter(g => {
-        const gameDate = new Date(g.created_at)
-        const weekAgo = new Date()
-        weekAgo.setDate(weekAgo.getDate() - 7)
-        return gameDate > weekAgo
-      }).length,
-      bySource: games.reduce((acc, game) => {
-        acc[game.source] = (acc[game.source] || 0) + 1
-        return acc
-      }, {})
+    try {
+      await delay(300);
+      
+      const games = await this.getAllGames();
+      
+      return {
+        total: games.length,
+        featured: games.filter(g => g.featured).length,
+        recent: games.filter(g => {
+          const gameDate = new Date(g.created_at);
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return gameDate > weekAgo;
+        }).length,
+        bySource: games.reduce((acc, game) => {
+          acc[game.source] = (acc[game.source] || 0) + 1;
+          return acc;
+        }, {})
+      };
+    } catch (error) {
+      console.error('Error getting game stats:', error);
+      return {
+        total: 0,
+        featured: 0,
+        recent: 0,
+        bySource: {}
+      };
     }
   }
 }
 
-export const gameService = new GameService()
+export const gameService = new GameService();

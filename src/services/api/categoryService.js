@@ -1,173 +1,331 @@
-// Category Service - Mock implementation with localStorage
-const STORAGE_KEY = 'ht5play_categories'
+// Category Service - Apper Backend Integration
+import { toast } from 'react-toastify';
 
-// Mock category data
-const mockCategories = [
-  {
-    id: 1,
-    name: 'Puzzle',
-    slug: 'puzzle',
-    icon: 'Puzzle',
-    color: '#10B981',
-    description: 'Challenge your mind with brain-teasing puzzles',
-    game_count: 15,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: 2,
-    name: 'Action',
-    slug: 'action',
-    icon: 'Zap',
-    color: '#EF4444',
-    description: 'Fast-paced action games for adrenaline junkies',
-    game_count: 23,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: 3,
-    name: 'Racing',
-    slug: 'racing',
-    icon: 'Car',
-    color: '#F59E0B',
-    description: 'High-speed racing games with realistic physics',
-    game_count: 12,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: 4,
-    name: 'Sports',
-    slug: 'sports',
-    icon: 'Trophy',
-    color: '#3B82F6',
-    description: 'Sports games for all types of athletes',
-    game_count: 18,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: 5,
-    name: 'Strategy',
-    slug: 'strategy',
-    icon: 'Target',
-    color: '#8B5CF6',
-    description: 'Strategic games that test your planning skills',
-    game_count: 9,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  }
-]
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 class CategoryService {
   constructor() {
-    this.initializeStorage()
+    this.tableName = 'category';
+    this.apperClient = null;
+    this.initializeClient();
   }
 
-  initializeStorage() {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockCategories))
-    }
-  }
-
-  getCategories() {
-    try {
-      const categories = localStorage.getItem(STORAGE_KEY)
-      return categories ? JSON.parse(categories) : []
-    } catch (error) {
-      console.error('Error loading categories:', error)
-      return mockCategories
+  initializeClient() {
+    if (typeof window !== 'undefined' && window.ApperSDK) {
+      const { ApperClient } = window.ApperSDK;
+      this.apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
     }
   }
 
   async getAllCategories() {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return this.getCategories()
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "icon" } },
+          { field: { Name: "color" } },
+          { field: { Name: "description" } },
+          { field: { Name: "game_count" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        orderBy: [
+          { fieldName: "Name", sorttype: "ASC" }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories');
+      return [];
+    }
   }
 
   async getCategoryById(id) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const categories = this.getCategories()
-    const category = categories.find(c => c.id === parseInt(id))
-    
-    if (!category) {
-      throw new Error(`Category with ID ${id} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "icon" } },
+          { field: { Name: "color" } },
+          { field: { Name: "description" } },
+          { field: { Name: "game_count" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ]
+      };
+
+      const response = await this.apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching category with ID ${id}:`, error);
+      toast.error(`Failed to fetch category`);
+      return null;
     }
-    
-    return category
   }
 
   async getCategoryBySlug(slug) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const categories = this.getCategories()
-    const category = categories.find(c => c.slug === slug)
-    
-    if (!category) {
-      throw new Error(`Category with slug ${slug} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "icon" } },
+          { field: { Name: "color" } },
+          { field: { Name: "description" } },
+          { field: { Name: "game_count" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        where: [
+          { FieldName: "slug", Operator: "EqualTo", Values: [slug] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (!response.data || response.data.length === 0) {
+        throw new Error(`Category with slug ${slug} not found`);
+      }
+
+      return response.data[0];
+    } catch (error) {
+      console.error(`Error fetching category with slug ${slug}:`, error);
+      toast.error(`Failed to fetch category`);
+      return null;
     }
-    
-    return category
   }
 
   async createCategory(categoryData) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const categories = this.getCategories()
-    const newCategory = {
-      id: Math.max(...categories.map(c => c.id)) + 1,
-      ...categoryData,
-      slug: this.generateSlug(categoryData.name),
-      game_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    try {
+      await delay(500);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: categoryData.Name || categoryData.name,
+          Tags: categoryData.Tags || '',
+          Owner: categoryData.Owner,
+          slug: categoryData.slug || this.generateSlug(categoryData.Name || categoryData.name),
+          icon: categoryData.icon || '',
+          color: categoryData.color || '',
+          description: categoryData.description || '',
+          game_count: categoryData.game_count || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Category created successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast.error('Failed to create category');
+      return null;
     }
-    
-    categories.push(newCategory)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories))
-    return newCategory
   }
 
   async updateCategory(id, categoryData) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const categories = this.getCategories()
-    const index = categories.findIndex(c => c.id === parseInt(id))
-    
-    if (index === -1) {
-      throw new Error(`Category with ID ${id} not found`)
+    try {
+      await delay(500);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          Name: categoryData.Name || categoryData.name,
+          Tags: categoryData.Tags || '',
+          Owner: categoryData.Owner,
+          slug: categoryData.slug,
+          icon: categoryData.icon || '',
+          color: categoryData.color || '',
+          description: categoryData.description || '',
+          game_count: categoryData.game_count || 0,
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Category updated successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast.error('Failed to update category');
+      return null;
     }
-    
-    categories[index] = {
-      ...categories[index],
-      ...categoryData,
-      updated_at: new Date().toISOString()
-    }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories))
-    return categories[index]
   }
 
   async deleteCategory(id) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const categories = this.getCategories()
-    const filteredCategories = categories.filter(c => c.id !== parseInt(id))
-    
-    if (filteredCategories.length === categories.length) {
-      throw new Error(`Category with ID ${id} not found`)
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulDeletions.length > 0) {
+          toast.success('Category deleted successfully');
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
+      return false;
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredCategories))
-    return { success: true }
   }
 
   async updateGameCount(categoryId, count) {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    const categories = this.getCategories()
-    const index = categories.findIndex(c => c.id === parseInt(categoryId))
-    
-    if (index !== -1) {
-      categories[index].game_count = count
-      categories[index].updated_at = new Date().toISOString()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(categories))
+    try {
+      await delay(200);
+      
+      const params = {
+        records: [{
+          Id: parseInt(categoryId),
+          game_count: count,
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating game count:', error);
+      return false;
     }
   }
 
@@ -177,22 +335,33 @@ class CategoryService {
       .replace(/[^a-z0-9 -]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .trim()
+      .trim();
   }
 
   async getCategoryStats() {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const categories = this.getCategories()
-    
-    return {
-      total: categories.length,
-      totalGames: categories.reduce((sum, cat) => sum + (cat.game_count || 0), 0),
-      averageGamesPerCategory: categories.length > 0 
-        ? Math.round(categories.reduce((sum, cat) => sum + (cat.game_count || 0), 0) / categories.length)
-        : 0,
-      mostPopular: categories.sort((a, b) => (b.game_count || 0) - (a.game_count || 0))[0]
+    try {
+      await delay(300);
+      
+      const categories = await this.getAllCategories();
+      
+      return {
+        total: categories.length,
+        totalGames: categories.reduce((sum, cat) => sum + (cat.game_count || 0), 0),
+        averageGamesPerCategory: categories.length > 0 
+          ? Math.round(categories.reduce((sum, cat) => sum + (cat.game_count || 0), 0) / categories.length)
+          : 0,
+        mostPopular: categories.sort((a, b) => (b.game_count || 0) - (a.game_count || 0))[0]
+      };
+    } catch (error) {
+      console.error('Error getting category stats:', error);
+      return {
+        total: 0,
+        totalGames: 0,
+        averageGamesPerCategory: 0,
+        mostPopular: null
+      };
     }
   }
 }
 
-export const categoryService = new CategoryService()
+export const categoryService = new CategoryService();

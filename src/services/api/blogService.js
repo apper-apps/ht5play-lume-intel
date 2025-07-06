@@ -1,180 +1,488 @@
-// Blog Service - Mock implementation with localStorage
-const STORAGE_KEY = 'ht5play_blogs'
+// Blog Service - Apper Backend Integration
+import { toast } from 'react-toastify';
 
-// Mock blog data
-const mockBlogs = [
-  {
-    id: 1,
-    title: 'Top 10 HTML5 Games of 2024',
-    slug: 'top-10-html5-games-2024',
-    content: '<p>Discover the most exciting HTML5 games that have taken the gaming world by storm this year. From puzzle games to action-packed adventures, we\'ve compiled a list of must-play titles.</p><p>These games showcase the incredible potential of HTML5 technology and provide hours of entertainment directly in your browser.</p>',
-    excerpt: 'Discover the most exciting HTML5 games that have taken the gaming world by storm this year.',
-    featured_image: 'https://via.placeholder.com/800x400',
-    author: 'Gaming Team',
-    status: 'published',
-    featured: true,
-    views: 1540,
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: 2,
-    title: 'The Future of Browser Gaming',
-    slug: 'future-of-browser-gaming',
-    content: '<p>Browser gaming has come a long way since the early days of Flash. With HTML5, WebGL, and WebAssembly, the possibilities are endless.</p><p>In this article, we explore the technologies that are shaping the future of gaming in the browser.</p>',
-    excerpt: 'Browser gaming has come a long way since the early days of Flash.',
-    featured_image: 'https://via.placeholder.com/800x400',
-    author: 'Tech Editor',
-    status: 'published',
-    featured: false,
-    views: 892,
-    created_at: '2024-01-14T15:45:00Z',
-    updated_at: '2024-01-14T15:45:00Z'
-  },
-  {
-    id: 3,
-    title: 'Game Development Tips for Beginners',
-    slug: 'game-development-tips-beginners',
-    content: '<p>Starting your journey in game development can be overwhelming. Here are some essential tips to help you get started.</p><p>From choosing the right tools to understanding game mechanics, we cover everything you need to know.</p>',
-    excerpt: 'Starting your journey in game development can be overwhelming.',
-    featured_image: 'https://via.placeholder.com/800x400',
-    author: 'Dev Team',
-    status: 'draft',
-    featured: false,
-    views: 0,
-    created_at: '2024-01-13T09:20:00Z',
-    updated_at: '2024-01-13T09:20:00Z'
-  }
-]
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 class BlogService {
   constructor() {
-    this.initializeStorage()
+    this.tableName = 'blog';
+    this.apperClient = null;
+    this.initializeClient();
   }
 
-  initializeStorage() {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockBlogs))
-    }
-  }
-
-  getBlogs() {
-    try {
-      const blogs = localStorage.getItem(STORAGE_KEY)
-      return blogs ? JSON.parse(blogs) : []
-    } catch (error) {
-      console.error('Error loading blogs:', error)
-      return mockBlogs
+  initializeClient() {
+    if (typeof window !== 'undefined' && window.ApperSDK) {
+      const { ApperClient } = window.ApperSDK;
+      this.apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
     }
   }
 
   async getAllBlogs() {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return this.getBlogs()
+    try {
+      await delay(500);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        orderBy: [
+          { fieldName: "created_at", sorttype: "DESC" }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+      toast.error('Failed to fetch blogs');
+      return [];
+    }
   }
 
   async getPublishedBlogs() {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const blogs = this.getBlogs()
-    return blogs.filter(blog => blog.status === 'published')
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        where: [
+          { FieldName: "status", Operator: "EqualTo", Values: ["published"] }
+        ],
+        orderBy: [
+          { fieldName: "created_at", sorttype: "DESC" }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching published blogs:', error);
+      toast.error('Failed to fetch published blogs');
+      return [];
+    }
   }
 
   async getBlogById(id) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const blogs = this.getBlogs()
-    const blog = blogs.find(b => b.id === parseInt(id))
-    
-    if (!blog) {
-      throw new Error(`Blog with ID ${id} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ]
+      };
+
+      const response = await this.apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching blog with ID ${id}:`, error);
+      toast.error(`Failed to fetch blog`);
+      return null;
     }
-    
-    return blog
   }
 
   async getBlogBySlug(slug) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const blogs = this.getBlogs()
-    const blog = blogs.find(b => b.slug === slug)
-    
-    if (!blog) {
-      throw new Error(`Blog with slug ${slug} not found`)
+    try {
+      await delay(300);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        where: [
+          { FieldName: "slug", Operator: "EqualTo", Values: [slug] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (!response.data || response.data.length === 0) {
+        throw new Error(`Blog with slug ${slug} not found`);
+      }
+
+      return response.data[0];
+    } catch (error) {
+      console.error(`Error fetching blog with slug ${slug}:`, error);
+      toast.error(`Failed to fetch blog`);
+      return null;
     }
-    
-    return blog
   }
 
   async getFeaturedBlogs() {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const blogs = this.getBlogs()
-    return blogs.filter(blog => blog.featured && blog.status === 'published')
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        where: [
+          { FieldName: "featured", Operator: "EqualTo", Values: [true] },
+          { FieldName: "status", Operator: "EqualTo", Values: ["published"] }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching featured blogs:', error);
+      toast.error('Failed to fetch featured blogs');
+      return [];
+    }
   }
 
   async getRecentBlogs(limit = 5) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const blogs = this.getBlogs()
-    return blogs
-      .filter(blog => blog.status === 'published')
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, limit)
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "title" } },
+          { field: { Name: "slug" } },
+          { field: { Name: "content" } },
+          { field: { Name: "excerpt" } },
+          { field: { Name: "featured_image" } },
+          { field: { Name: "author" } },
+          { field: { Name: "status" } },
+          { field: { Name: "featured" } },
+          { field: { Name: "views" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "updated_at" } }
+        ],
+        where: [
+          { FieldName: "status", Operator: "EqualTo", Values: ["published"] }
+        ],
+        orderBy: [
+          { fieldName: "created_at", sorttype: "DESC" }
+        ],
+        pagingInfo: {
+          limit: limit,
+          offset: 0
+        }
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching recent blogs:', error);
+      toast.error('Failed to fetch recent blogs');
+      return [];
+    }
   }
 
   async createBlog(blogData) {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    const blogs = this.getBlogs()
-    const newBlog = {
-      id: Math.max(...blogs.map(b => b.id)) + 1,
-      ...blogData,
-      slug: this.generateSlug(blogData.title),
-      views: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    try {
+      await delay(600);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Name: blogData.Name || blogData.title,
+          Tags: blogData.Tags || '',
+          Owner: blogData.Owner,
+          title: blogData.title || '',
+          slug: blogData.slug || this.generateSlug(blogData.title),
+          content: blogData.content || '',
+          excerpt: blogData.excerpt || '',
+          featured_image: blogData.featured_image || '',
+          author: blogData.author || '',
+          status: blogData.status || 'draft',
+          featured: blogData.featured || false,
+          views: blogData.views || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Blog created successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error creating blog:', error);
+      toast.error('Failed to create blog');
+      return null;
     }
-    
-    blogs.push(newBlog)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(blogs))
-    return newBlog
   }
 
   async updateBlog(id, blogData) {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    const blogs = this.getBlogs()
-    const index = blogs.findIndex(b => b.id === parseInt(id))
-    
-    if (index === -1) {
-      throw new Error(`Blog with ID ${id} not found`)
+    try {
+      await delay(600);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      // Only include Updateable fields
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          Name: blogData.Name || blogData.title,
+          Tags: blogData.Tags || '',
+          Owner: blogData.Owner,
+          title: blogData.title || '',
+          slug: blogData.slug,
+          content: blogData.content || '',
+          excerpt: blogData.excerpt || '',
+          featured_image: blogData.featured_image || '',
+          author: blogData.author || '',
+          status: blogData.status || 'draft',
+          featured: blogData.featured || false,
+          views: blogData.views || 0,
+          updated_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success('Blog updated successfully');
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error updating blog:', error);
+      toast.error('Failed to update blog');
+      return null;
     }
-    
-    blogs[index] = {
-      ...blogs[index],
-      ...blogData,
-      updated_at: new Date().toISOString()
-    }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(blogs))
-    return blogs[index]
   }
 
   async deleteBlog(id) {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    const blogs = this.getBlogs()
-    const filteredBlogs = blogs.filter(b => b.id !== parseInt(id))
-    
-    if (filteredBlogs.length === blogs.length) {
-      throw new Error(`Blog with ID ${id} not found`)
+    try {
+      await delay(400);
+      
+      if (!this.apperClient) this.initializeClient();
+      
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulDeletions.length > 0) {
+          toast.success('Blog deleted successfully');
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+      toast.error('Failed to delete blog');
+      return false;
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredBlogs))
-    return { success: true }
   }
 
   async incrementViews(id) {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    const blogs = this.getBlogs()
-    const index = blogs.findIndex(b => b.id === parseInt(id))
-    
-    if (index !== -1) {
-      blogs[index].views = (blogs[index].views || 0) + 1
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(blogs))
+    try {
+      await delay(200);
+      
+      const blog = await this.getBlogById(id);
+      if (!blog) return;
+
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          views: (blog.views || 0) + 1
+        }]
+      };
+
+      await this.apperClient.updateRecord(this.tableName, params);
+    } catch (error) {
+      console.error('Error incrementing blog views:', error);
     }
   }
 
@@ -184,21 +492,33 @@ class BlogService {
       .replace(/[^a-z0-9 -]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .trim()
+      .trim();
   }
 
   async getBlogStats() {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const blogs = this.getBlogs()
-    
-    return {
-      total: blogs.length,
-      published: blogs.filter(b => b.status === 'published').length,
-      draft: blogs.filter(b => b.status === 'draft').length,
-      featured: blogs.filter(b => b.featured).length,
-      totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0)
+    try {
+      await delay(300);
+      
+      const blogs = await this.getAllBlogs();
+      
+      return {
+        total: blogs.length,
+        published: blogs.filter(b => b.status === 'published').length,
+        draft: blogs.filter(b => b.status === 'draft').length,
+        featured: blogs.filter(b => b.featured).length,
+        totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0)
+      };
+    } catch (error) {
+      console.error('Error getting blog stats:', error);
+      return {
+        total: 0,
+        published: 0,
+        draft: 0,
+        featured: 0,
+        totalViews: 0
+      };
     }
   }
 }
 
-export const blogService = new BlogService()
+export const blogService = new BlogService();
